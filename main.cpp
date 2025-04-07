@@ -4,16 +4,16 @@
 using namespace std;
 
 const int grid_size = 10;
-const int mineNum = 20;
 
 class MineSweeper {
 private:
     int board[grid_size][grid_size];    // The game board (0 for hidden, 1 for revealed)
     int mineBoard[grid_size][grid_size]; // The mine board (0: empty, -1: mine)
     int lives;
+    int mineNum;
 
 public:
-    MineSweeper(): lives(3) {
+    MineSweeper(int difficulty): lives(3), mineNum(difficulty){
         for (int row = 0; row < grid_size; row++) {
             for (int column = 0; column < grid_size; column++) {
                 board[row][column] = 0;
@@ -23,7 +23,7 @@ public:
         placeMines();
     }
 
-    void clearScreen() {
+    static void clearScreen() {
         system("clear");
     }
 
@@ -125,10 +125,10 @@ public:
                 cin >> x_cord >> y_cord;
 
                 if (cin.fail()) {
-                    throw 101;
+                    throw 201;
                 }
                 if (x_cord < 0 || x_cord >= grid_size || y_cord < 0 || y_cord >= grid_size) {
-                    throw 102;
+                    throw 202;
                 }
                 if (board[y_cord][x_cord] != 0) {
                     cout << "----------Cell Already Revealed----------" << endl;
@@ -147,7 +147,8 @@ public:
                         cout << "┏━━━━━━━━━━━━━━━━━┓\n"
                                 "  > Game Cleared!  \n"
                                 "┗━━━━━━━━━━━━━━━━━┛\n";
-                        cout << "Congratulations! You've cleared the MineSweeper!" << endl;
+                        cout << "Congratulations! You've cleared the MineSweeper!" << endl << endl;
+
                     } else if (lives == 0) {
                         gameOver = true;
                         cout << "░ ░ ░ █ █ █ █ █ ░ ░ ░\n"
@@ -161,22 +162,84 @@ public:
                                 "░ █ ░ ░ ░ ░ ░ ░ ░ █ ░\n"
                                 "░ ░ █ ░ █ ░ █ ░ █ ░ ░\n"
                                 "░ ░ █ █ █ █ █ █ █ ░ ░\n";
-                        cout << "------Game Over!------" << endl;
+                        cout << "------Game Over!------" << endl << endl;
                     } else
                         displayBoard();
                 }
             } catch (int error) {
                 cin.clear();
                 cin.ignore();
-                cout << "---------Invalid Input----------" << endl;
+                cout << "------------Invalid Input------------" << endl;
                 continue;
             }
         }
     }
 };
 
+static bool optionsScreen(){ //Options screen
+    int choice = 0;
+    do {
+        try{
+            cout << "Options:\n"
+                    "----------------------------------\n"
+                    "[1] Main Menu\n"
+                    "[2] Exit\n"
+                    "----------------------------------\n"
+                    "Selection: ";
+            cin >> choice;
+            if (cin.fail() || choice < 1 || choice > 2)
+                throw 301;
+        }
+        catch(int error){
+            cin.clear();
+            cin.ignore();
+            cout << "------------Invalid Choice!------------" << endl << endl;
+
+        }
+    }while(choice < 1 || choice > 2);
+    if (choice == 1)
+        return true;
+    return false;
+}
+
+//Menu and Difficulty selection
+int MainMenu(){
+    int choice = 0;
+    do {
+        try {
+            cout << "The Mine Sweeper's Agenda!\n"
+                    "----------------------------------\n"
+                    "> Select Difficulty:\n"
+                    "[1] Easy\n"
+                    "[2] Medium\n"
+                    "[3] Hard\n"
+                    "----------------------------------\n"
+                    "Selection: ";
+            cin >> choice;
+            if (cin.fail() || choice < 1 || choice > 3)
+                throw 101;
+        } catch (int error) {
+            cin.clear();
+            cin.ignore();
+            cout << "------------Invalid Choice!------------" << endl << endl;
+            choice = 0;
+        }
+    }while (choice < 1 || choice > 3);
+    switch (choice){
+        case 1: return 10;
+        case 2: return 20;
+        case 3: return 30;
+        default: return 20;
+    }
+}
+
 int main() {
-    MineSweeper game;
-    game.GamePlay();
+    bool running = true;
+        while (running){
+            int difficulty = MainMenu(); //get difficulty
+            MineSweeper game(difficulty);
+            game.GamePlay();
+           running = optionsScreen();
+        }
     return 0;
 }
