@@ -1,6 +1,7 @@
 #include <iostream>
 #include <ctime>
 #include <cstdlib>
+#include <fstream>
 using namespace std;
 
 const int grid_size = 10;
@@ -14,13 +15,27 @@ private:
 
 public:
     MineSweeper(int difficulty): lives(3), mineNum(difficulty){
-        for (int row = 0; row < grid_size; row++) {
+        for (int row = 0; row < grid_size; row++) {  //Clears and resets boards to hidden
             for (int column = 0; column < grid_size; column++) {
                 board[row][column] = 0;
                 mineBoard[row][column] = 0;
             }
         }
         placeMines();
+    }
+
+    void placeMines() {
+        srand(time(nullptr)); //random seed
+        int minesPlaced = 0;
+        while (minesPlaced < mineNum) {
+            int x_mine_cord = rand() % grid_size;
+            int y_mine_cord = rand() % grid_size;
+
+            if (mineBoard[y_mine_cord][x_mine_cord] == 0) {
+                mineBoard[y_mine_cord][x_mine_cord] = -1;
+                minesPlaced++;
+            }
+        }
     }
 
     static void clearScreen() {
@@ -31,13 +46,13 @@ public:
         clearScreen();
 
         cout << "  ";
-        for (int colNum = 0; colNum < grid_size; ++colNum) {
+        for (int colNum = 0; colNum < grid_size; ++colNum) { //column reference number
             cout << colNum << " ";
         }
         cout << endl;
 
         for (int rows = 0; rows < grid_size; ++rows) {
-            cout << rows << " ";
+            cout << rows << " "; // row reference number
             for (int columns = 0; columns < grid_size; ++columns) {
                 if (board[rows][columns] == 0) {
                     cout << "░ ";
@@ -51,31 +66,16 @@ public:
         }
     }
 
-    void placeMines() {
-        srand(time(nullptr));
 
-        int minesPlaced = 0;
-        while (minesPlaced < mineNum) {
-            int x_mine_cord = rand() % grid_size;
-            int y_mine_cord = rand() % grid_size;
-
-            if (mineBoard[y_mine_cord][x_mine_cord] == 0) {
-                mineBoard[y_mine_cord][x_mine_cord] = -1;
-                minesPlaced++;
-            }
-        }
-    }
-
-    int countAdjacentMines(int cellX, int cellY) {
+    int countAdjacentMines(int x_cord, int y_cord) { //Counts nearby mines
         int mineCount = 0;
-        for (int rowCheck = -1; rowCheck <= 1; ++rowCheck) {
-            for (int colCheck = -1; colCheck <= 1; ++colCheck) {
-                int adjCellX = cellX + colCheck;
-                int adjCellY = cellY + rowCheck;
-                if (adjCellX >= 0 && adjCellX < grid_size && adjCellY >= 0 && adjCellY < grid_size && (rowCheck != 0 || colCheck != 0)) {
-                    if (mineBoard[adjCellY][adjCellX] == -1) {
+        for (int rowOffset = -1; rowOffset <= 1; ++rowOffset) {      //coordinate offset
+            for (int colOffset = -1; colOffset <= 1; ++colOffset) {
+                int adjCellX = x_cord + colOffset;
+                int adjCellY = y_cord + rowOffset;
+                if (adjCellX >= 0 && adjCellX < grid_size && adjCellY >= 0 && adjCellY < grid_size && (rowOffset != 0 || colOffset != 0)) {
+                    if (mineBoard[adjCellY][adjCellX] == -1) // if mine the add to counter
                         mineCount++;
-                    }
                 }
             }
         }
@@ -83,11 +83,10 @@ public:
     }
 
     bool revealSquare(int x_cord, int y_cord) {
-        if (mineBoard[y_cord][x_cord] == -1) {
-            board[y_cord][x_cord] = 1;
+        if (mineBoard[y_cord][x_cord] == -1) { //if it's a mine
+            board[y_cord][x_cord] = 1; //revealed square
             return false;
         }
-
         int adjacentMines = countAdjacentMines(x_cord, y_cord);
         mineBoard[y_cord][x_cord] = adjacentMines;
         board[y_cord][x_cord] = 1;
@@ -97,7 +96,7 @@ public:
     bool checkWin() {
         for (int row = 0; row < grid_size; ++row) {
             for (int column = 0; column < grid_size; ++column) {
-                if (mineBoard[row][column] != -1 && board[row][column] == 0) {
+                if (mineBoard[row][column] != -1 && board[row][column] == 0) { //checks if mines or hidden cells are left
                     return false;
                 }
             }
@@ -168,7 +167,11 @@ public:
                 }
             } catch (int error) {
                 cin.clear();
-                cin.ignore();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                ofstream ErrorLog("error_log.txt", ios::app);
+                time_t now = time(0);
+                ErrorLog << "Error Code: " << error << " | " << ctime(&now) << endl;
+                ErrorLog.close();
                 cout << "------------Invalid Input------------" << endl;
                 continue;
             }
@@ -180,8 +183,8 @@ static bool optionsScreen(){ //Options screen
     int choice = 0;
     do {
         try{
-            cout << "Options:\n"
-                    "----------------------------------\n"
+            cout << "----------------------------------\n"
+                    "> Options:\n"
                     "[1] Main Menu\n"
                     "[2] Exit\n"
                     "----------------------------------\n"
@@ -192,7 +195,11 @@ static bool optionsScreen(){ //Options screen
         }
         catch(int error){
             cin.clear();
-            cin.ignore();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            ofstream ErrorLog("error_log.txt", ios::app);
+            time_t now = time(0);
+            ErrorLog << "Error Code: " << error << " | " << ctime(&now) << endl;
+            ErrorLog.close();
             cout << "------------Invalid Choice!------------" << endl << endl;
 
         }
@@ -206,21 +213,25 @@ static bool optionsScreen(){ //Options screen
 int MainMenu(){
     int choice = 0;
     do {
+        cout << "The MineSweeper's Quest!\n"
+            "----------------------------------\n"
+            "> Select Difficulty:\n"
+            "[1] Easy\n"
+            "[2] Medium\n"
+            "[3] Hard\n"
+            "----------------------------------\n"
+            "Selection: ";
         try {
-            cout << "The Mine Sweeper's Agenda!\n"
-                    "----------------------------------\n"
-                    "> Select Difficulty:\n"
-                    "[1] Easy\n"
-                    "[2] Medium\n"
-                    "[3] Hard\n"
-                    "----------------------------------\n"
-                    "Selection: ";
             cin >> choice;
             if (cin.fail() || choice < 1 || choice > 3)
                 throw 101;
         } catch (int error) {
             cin.clear();
-            cin.ignore();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            ofstream ErrorLog("error_log.txt", ios::app);
+            time_t now = time(0);
+            ErrorLog << "Error Code: " << error << " | " << ctime(&now) << endl;
+            ErrorLog.close();
             cout << "------------Invalid Choice!------------" << endl << endl;
             choice = 0;
         }
